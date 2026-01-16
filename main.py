@@ -47,32 +47,41 @@ def crop(image: cv2.Mat) -> cv2.Mat:
     y_off = int((img_height - target_height) / 2)
     assert x_off == 0 or y_off == 0, "Aspect ratio calculation error"
 
-    # Use saliency detection for smart cropping
-    saliency = cv2.saliency.StaticSaliencySpectralResidual_create()
-    (success, saliencyMap) = saliency.computeSaliency(image)
-    saliencyMap = (saliencyMap * 255).astype("uint8")
+    shift_x, shift_y = target_saliency(image, x_off, y_off)
 
-    if not x_off:  # Vertical cropping needed
-        vert = numpy.max(saliencyMap, axis=1)
-        vert = numpy.convolve(vert, numpy.ones(64)/64, "same")  # Smooth signal
-        sal_centre = int(numpy.argmax(vert))  # Most important vertical position
-        img_centre = int(img_height / 2)
-        # Adjust crop to focus on salient region
-        shift_y = max(min(sal_centre - img_centre, y_off), -y_off)
-        y_off += shift_y
-    else:  # Horizontal cropping needed
-        horiz = numpy.max(saliencyMap, axis=0)
-        horiz = numpy.convolve(horiz, numpy.ones(64)/64, "same")  # Smooth signal
-        sal_centre = int(numpy.argmax(horiz))  # Most important horizontal position
-        img_centre = int(img_width / 2)
-        # Adjust crop to focus on salient region
-        shift_x = max(min(sal_centre - img_centre, x_off), -x_off)
-        x_off += shift_x
+    x_off += shift_x
+    y_off += shift_y
 
     # Perform final crop
     image = image[y_off:y_off + target_height, x_off:x_off + target_width]
     img_height, img_width = image.shape[:2]
     return image
+
+def target_saliency(image: cv2.Mat, x_off: int, y_off: int):
+    # Use saliency detection for smart cropping
+    img_height, img_width = image.shape[:2]
+
+    saliency = cv2.saliency.StaticSaliencySpectralResidual_create()
+    (success, saliencyMap) = saliency.computeSaliency(image)
+    saliencyMap = (saliencyMap * 255).astype("uint8")
+
+    shift_x = shift_y = 0
+    if y_off:  # Vertical cropping needed
+        vert = numpy.max(saliencyMap, axis=1)
+        vert = numpy.convolve(vert, numpy.ones(64)/64, "same")  # Smooth signal
+        sal_center = int(numpy.argmax(vert))  # Most important vertical position
+        img_center = int(img_height / 2)
+        # Adjust crop to focus on salient region
+        shift_y = max(min(sal_center - img_center, y_off), -y_off)
+    else:  # Horizontal cropping needed
+        horiz = numpy.max(saliencyMap, axis=0)
+        horiz = numpy.convolve(horiz, numpy.ones(64)/64, "same")  # Smooth signal
+        sal_center = int(numpy.argmax(horiz))  # Most important horizontal position
+        img_center = int(img_width / 2)
+        # Adjust crop to focus on salient region
+        shift_x = max(min(sal_center - img_center, x_off), -x_off)
+
+    return shift_x, shift_y
 
 def display(image_path: Path):
     """Display image on the e-paper device
