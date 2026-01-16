@@ -1,1 +1,4 @@
-.venv
+*.pyc
+venv
+photos/originals/*.jpg
+photos/prepared/*.bmp
