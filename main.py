@@ -11,8 +11,8 @@ import numpy
 from PIL import Image
 
 FRAME_IS_LANDSCAPE = True  # False if frame is oriented in portrait
-FRAME_LONG = 800
-FRAME_SHORT = 480
+FRAME_PIXELS_LONG = 800
+FRAME_PIXELS_SHORT = 480
 
 script_dir = Path(__file__).parent
 ORIGINALS_DIR = script_dir / 'photos/originals'
@@ -27,11 +27,11 @@ def crop(image: cv2.Mat) -> cv2.Mat:
 
     Adapted from Waveshare's example code.
     """
-    target_width = FRAME_LONG
-    target_height = FRAME_SHORT
+    target_width = FRAME_PIXELS_LONG
+    target_height = FRAME_PIXELS_SHORT
     if not FRAME_IS_LANDSCAPE:
-        target_width = FRAME_SHORT
-        target_height= FRAME_LONG
+        target_width = FRAME_PIXELS_SHORT
+        target_height= FRAME_PIXELS_LONG
 
     img_height, img_width = image.shape[:2]
     img_aspect = img_width / img_height
