@@ -17,6 +17,8 @@ FRAME_PIXELS_SHORT = 480
 script_dir = Path(__file__).parent
 ORIGINALS_DIR = script_dir / 'photos/originals'
 PREPARED_DIR = script_dir / 'photos/prepared'
+RECENCY_THRESHOLD = 60 * 60 * 24 * 7  # Seconds ago to consider pictures to be "recent" and prioritized
+RECENCY_PRIORITY = 0.2  # Show a "recent" photo this percentage of time
 
 FACE_DETECTION_NET_PATH = script_dir / 'face-detection.prototxt'
 FACE_DETECTION_WEIGHTS_PATH = script_dir / 'res10_300x300_ssd_iter_140000_fp16.caffemodel'
@@ -188,9 +190,30 @@ def prepare_image(original_path: Path, prepared_path: Path):
     image_pil = dither(image_pil)
     image_pil.save(prepared_path)
 
+def select_image():
+    recency_cutoff = time.time() - RECENCY_THRESHOLD
+    recent, old = [], []
+    for candidate in ORIGINALS_DIR.glob('*.jpg', case_sensitive=False):
+        if candidate.stat().st_ctime > recency_cutoff:
+            recent.append(candidate)
+        else:
+            old.append(candidate)
+    # print(f'lengths: recent: {len(recent)} -- old: {len(old)}')
+    candidates = old
+    if not old or (recent and random.random() < RECENCY_PRIORITY):
+        # print('Selecting from recent')
+        candidates = recent
+
+    if not candidates:
+        return None
+    return random.choice(candidates)
+
 if __name__ == '__main__':
-    candidates = list(ORIGINALS_DIR.glob('*.jpg', case_sensitive=False))
-    img_path = random.choice(candidates)
+    img_path = select_image()
+    if not img_path:
+        print('No image selected.  Quitting.')
+        sys.exit(1)
+
     with open(img_path, 'rb') as img:
         hash = hashlib.file_digest(img, 'md5').hexdigest()
     prepared_path = PREPARED_DIR / f'{hash}_{'landscape' if FRAME_IS_LANDSCAPE else 'portrait'}.bmp'
