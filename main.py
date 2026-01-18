@@ -14,6 +14,21 @@ FRAME_IS_LANDSCAPE = True  # False if frame is oriented in portrait
 FRAME_PIXELS_LONG = 800
 FRAME_PIXELS_SHORT = 480
 
+FRAME_COLOR_MAP = {
+    # Keys are the quantized values used for dithering.
+    #   They can differ from their nominal values to better match the display's capabilities.
+    #   However, my attempts at doing this have resulted in abysmal results.
+    # Values are the 4 bits used by the display driver to select the pixel color.
+    (  0,   0,   0): 0b0000,  # Black
+    (255, 255, 255): 0b0001,  # White
+    (255, 255,   0): 0b0010,  # Yellow
+    (255,   0,   0): 0b0011,  # Red
+    (  0,   0, 255): 0b0101,  # Blue
+    (  0, 255,   0): 0b0110,  # Green
+}
+# This works because dict iteration is insertion order. See also dither().
+INDEXED_COLOR_MAP = {i: v for i, v in enumerate(FRAME_COLOR_MAP.values())}
+
 script_dir = Path(__file__).parent
 ORIGINALS_DIR = script_dir / 'photos/originals'
 PREPARED_DIR = script_dir / 'photos/prepared'
@@ -159,8 +174,11 @@ def display(image_path: Path):
         image = image.rotate(90, expand=True)
 
     try:
-        # Send image to display
-        epd.display(epd.getbuffer(image))
+        # Map the image colors to the display's 4-bit representation
+        buf = [INDEXED_COLOR_MAP[pixel] for pixel in image.get_flattened_data()]
+        # Condense each pair of 4-bit pixels into a byte
+        buf = [(buf[i] << 4) + buf[i+1] for i in range(0, len(buf), 2)]
+        epd.display(buf)
         time.sleep(1)  # Wait for display to complete
 
         # Put display into low-power sleep mode
@@ -177,8 +195,8 @@ def display(image_path: Path):
 def dither(image: Image) -> Image:
     """Dither for 6-color eInk display."""
     palette_image = Image.new("P", (1,1))
-    palette_image.putpalette((0,0,0,  255,255,255,  255,0,0,  0,255,0,  0,0,255,  255,255,0))
-    return image.quantize(colors=6, palette=palette_image).convert('RGB')
+    palette_image.putpalette([channel for color in FRAME_COLOR_MAP.keys() for channel in color])
+    return image.quantize(palette=palette_image)
 
 def prepare_image(original_path: Path, prepared_path: Path):
     image_cv2 = cv2.imread(original_path)
