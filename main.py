@@ -155,9 +155,8 @@ def display(image_path: Path):
     image = Image.open(image_path)
     if FRAME_IS_LANDSCAPE:
         image = image.rotate(180)  # Display seems to be upside down?
-    # TODO:
-    # else:
-    #    image = image.rotate(???)
+    else:
+        image = image.rotate(90, expand=True)
 
     try:
         # Send image to display
