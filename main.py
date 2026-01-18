@@ -139,7 +139,7 @@ def target_saliency(image: cv2.Mat, x_off: int, y_off: int):
     return shift_x, shift_y
 
 def display(image_path: Path):
-    """Display image on the e-paper device
+    """Display prepared image on the e-paper device
 
     Adapted from Waveshare's example code.
     """
@@ -150,7 +150,7 @@ def display(image_path: Path):
         epd.init()
     except Exception as e:
         print(f"Failed to initialize display: {e}")
-        sys.exit(1)
+        return
 
     image = Image.open(image_path)
     if FRAME_IS_LANDSCAPE:
@@ -167,13 +167,12 @@ def display(image_path: Path):
         epd.sleep()
     except AttributeError as e:
         print(f"Error: Driver module missing required attribute: {e}")
-        sys.exit(1)
     except Exception as e:
-        print(f"Error during display process: {e}")
+        print(f"Error during display process")
         # Ensure proper cleanup
         if hasattr(epd, 'epdconfig'):
             epd.epdconfig.module_exit()
-        sys.exit(1)
+        raise e
 
 def dither(image: Image) -> Image:
     """Dither for 6-color eInk display."""
