@@ -37,7 +37,7 @@ RECENCY_PRIORITY = 0.2  # Show a "recent" photo this percentage of time
 
 FACE_DETECTION_NET_PATH = script_dir / 'face-detection.prototxt'
 FACE_DETECTION_WEIGHTS_PATH = script_dir / 'res10_300x300_ssd_iter_140000_fp16.caffemodel'
-FACE_DETECTION_CONFIDENCE_CUTOFF = 0.7  # [0-1] -> [0-100]% Confident
+FACE_DETECTION_CONFIDENCE_CUTOFF = 0.5  # [0-1] -> [0-100]% Confident
 
 def crop(image: cv2.Mat) -> cv2.Mat:
     """Intelligently crop the image to fit display dimensions.
